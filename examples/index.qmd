@@ -1,0 +1,28 @@
+---
+title: "Examples"
+---
+
+This section contains step-by-step tutorials for using fluvial-particle.
+
+## Getting Started
+
+- [Quickstart](basic/quickstart.qmd) - Run your first simulation in 5 minutes
+- [Options File Guide](basic/options_file.qmd) - Understanding simulation parameters
+
+## 2D Simulations
+
+- [Straight Channel](basic/straight_channel.qmd) - Basic 2D particle tracking
+- [Meandering River](basic/meandering_river.qmd) - Complex geometry example
+
+## 3D Simulations
+
+- [Vertical Mixing](3d_tracking/vertical_mixing.qmd) - 3D tracking with vertical dispersion
+
+## Time-Varying Flows
+
+- [Unsteady Flow](time_varying/unsteady_flow.qmd) - Time-dependent velocity fields
+
+## Visualization
+
+- [ParaView](visualization/paraview.qmd) - Visualizing results in ParaView
+- [Python Visualization](visualization/python_viz.qmd) - Matplotlib and PyVista

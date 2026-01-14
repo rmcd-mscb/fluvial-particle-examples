@@ -1,0 +1,131 @@
+---
+title: "Quickstart"
+description: "Run your first fluvial-particle simulation in 5 minutes"
+---
+
+## Overview
+
+This tutorial walks you through running a basic particle tracking simulation using pre-computed velocity fields.
+
+## Prerequisites
+
+Make sure you have pixi installed and dependencies set up:
+
+```bash
+pixi install
+```
+
+## Step 1: Prepare Input Data
+
+Fluvial-particle requires velocity field data in VTK Structured Grid format (`.vts`). This example uses a simple straight channel dataset included in this repository.
+
+```{python}
+#| eval: false
+from pathlib import Path
+
+# Check that data files exist
+data_dir = Path("../../data/grids/straight_channel")
+print(f"2D grid: {data_dir / 'Result_2D.vts'}")
+print(f"3D grid: {data_dir / 'Result_3D.vts'}")
+```
+
+## Step 2: Create Options File
+
+The simulation is configured through a Python options file:
+
+```{python}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show options file"
+
+# Example options file content
+options = '''
+# Simulation parameters
+SimTime = 100.0        # Total simulation time (seconds)
+dt = 0.1               # Timestep (seconds)
+NumPart = 100          # Number of particles
+Track3D = 0            # 0 = 2D, 1 = 3D
+
+# Grid files
+file_name_2d = "./data/grids/straight_channel/Result_2D.vts"
+file_name_3d = "./data/grids/straight_channel/Result_3D.vts"
+
+# Initial particle position (x, y, z)
+StartLoc = (10.0, 5.0, 0.5)
+
+# Output settings
+PrintAtTick = 10.0     # Save every 10 seconds
+
+# Field name mapping (maps your model's names to standard names)
+field_map_2d = {
+    "bed_elevation": "Elevation",
+    "shear_stress": "ShearStress",
+    "velocity": "Velocity",
+    "water_surface_elevation": "WaterSurfaceElevation",
+}
+field_map_3d = {"velocity": "Velocity"}
+'''
+print(options)
+```
+
+## Step 3: Run the Simulation
+
+```bash
+# Using the CLI
+pixi run simulate --settings options.py --output outputs/quickstart
+
+# Or using Python directly
+pixi run python -c "
+from fluvial_particle import simulate
+from fluvial_particle.Settings import Settings
+import time
+
+settings = Settings.read('options.py')
+argdict = {
+    'settings_file': 'options.py',
+    'seed': 12345,
+    'no_postprocess': False,
+    'output_directory': 'outputs/quickstart'
+}
+simulate(settings, argdict, timer=time.time)
+"
+```
+
+## Step 4: Examine Output
+
+The simulation creates several output files:
+
+```
+outputs/quickstart/
+├── particles.h5      # HDF5 particle trajectories
+├── particles.xmf     # XDMF metadata for ParaView
+├── cells.h5          # Cell-centered statistics
+└── cells_2d.xmf      # Cell XDMF metadata
+```
+
+```{python}
+#| eval: false
+import h5py
+import matplotlib.pyplot as plt
+
+# Load particle trajectories
+with h5py.File("outputs/quickstart/particles.h5", "r") as f:
+    x = f["coordinates"]["x"][:]
+    y = f["coordinates"]["y"][:]
+    t = f["time"][:]
+
+# Plot trajectories
+plt.figure(figsize=(10, 4))
+for i in range(min(10, x.shape[1])):  # Plot first 10 particles
+    plt.plot(x[:, i], y[:, i], alpha=0.5)
+plt.xlabel("x (m)")
+plt.ylabel("y (m)")
+plt.title("Particle Trajectories")
+plt.show()
+```
+
+## Next Steps
+
+- [Options File Guide](options_file.qmd) - Learn about all configuration options
+- [Straight Channel](straight_channel.qmd) - Detailed 2D simulation example
+- [ParaView Visualization](../visualization/paraview.qmd) - Visualize results in ParaView

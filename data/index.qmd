@@ -1,0 +1,66 @@
+---
+title: "Datasets"
+---
+
+This page documents the example datasets included in this repository.
+
+## Available Datasets
+
+### Straight Channel (2D + 3D)
+
+**Location**: `data/grids/straight_channel/`
+
+A simple straight rectangular channel for basic testing and tutorials.
+
+| File | Description | Dimensions |
+|------|-------------|------------|
+| `Result_2D.vts` | 2D depth-averaged fields | 100 × 20 |
+| `Result_3D.vts` | 3D velocity field | 100 × 20 × 10 |
+
+**Fields**:
+- `Velocity` - Velocity vector (3 components)
+- `Elevation` - Bed elevation
+- `WaterSurfaceElevation` - Water surface elevation
+- `ShearStress` - Bed shear stress
+
+### Time Series (Unsteady Flow)
+
+**Location**: `data/grids/time_series/`
+
+Time-varying flow field with 5 timesteps for demonstrating unsteady simulations.
+
+| Files | Description | Dimensions |
+|-------|-------------|------------|
+| `Result_2D_{2-6}.vts` | 2D fields at each timestep | 321 × 42 |
+| `Result_3D_{2-6}.vts` | 3D velocity at each timestep | 321 × 42 × 11 |
+
+**Time spacing**: 1 second between files
+
+## Downloading Data
+
+Large data files are stored using Git LFS. After cloning, pull the data:
+
+```bash
+git lfs pull
+```
+
+Or selectively pull specific datasets:
+
+```bash
+git lfs pull --include="data/grids/straight_channel/*"
+```
+
+## Adding Your Own Data
+
+To add new datasets to this repository:
+
+1. Place VTS/VTK files in an appropriate subdirectory under `data/`
+2. Files matching patterns in `.gitattributes` will automatically use Git LFS
+3. Document the dataset in this page
+4. Add an example using the dataset in `examples/`
+
+## File Size Guidelines
+
+- Individual files: < 100 MB recommended
+- Total repository LFS storage: Be mindful of GitHub LFS quotas
+- Consider compression for very large datasets

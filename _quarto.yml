@@ -1,0 +1,67 @@
+project:
+  type: website
+  output-dir: _output
+
+website:
+  title: "Fluvial Particle Examples"
+  description: "Tutorials and examples for Lagrangian particle tracking in river flows"
+
+  navbar:
+    background: primary
+    left:
+      - href: index.qmd
+        text: Home
+      - href: examples/index.qmd
+        text: Examples
+      - href: data/index.qmd
+        text: Datasets
+      - href: api.qmd
+        text: API Reference
+    right:
+      - icon: github
+        href: https://github.com/rmcd-mscb/fluvial-particle-examples
+
+  sidebar:
+    - title: "Examples"
+      style: "docked"
+      contents:
+        - section: "Getting Started"
+          contents:
+            - examples/basic/quickstart.qmd
+            - examples/basic/options_file.qmd
+        - section: "2D Simulations"
+          contents:
+            - examples/basic/straight_channel.qmd
+            - examples/basic/meandering_river.qmd
+        - section: "3D Simulations"
+          contents:
+            - examples/3d_tracking/vertical_mixing.qmd
+        - section: "Time-Varying Flows"
+          contents:
+            - examples/time_varying/unsteady_flow.qmd
+        - section: "Post-Processing"
+          contents:
+            - examples/visualization/paraview.qmd
+            - examples/visualization/python_viz.qmd
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: true
+    code-copy: true
+    highlight-style: github
+
+execute:
+  freeze: auto
+  cache: true
+
+# Jupyter kernel for Python code blocks
+jupyter: python3
+
+# Bibliography (if using citations)
+# bibliography: references.bib

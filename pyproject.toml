@@ -1,0 +1,88 @@
+[project]
+name = "fluvial-particle-examples"
+version = "0.1.0"
+description = "Example datasets and tutorials for fluvial-particle simulations"
+authors = [{name = "Richard McDonald", email = "rmcd@usgs.gov"}]
+readme = "README.md"
+requires-python = ">= 3.11"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+]
+
+# No Python dependencies here - pixi manages everything
+dependencies = []
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+# =============================================================================
+# Conda dependencies (compiled libraries)
+# =============================================================================
+[tool.pixi.dependencies]
+python = ">=3.11,<3.14"
+vtk = ">=9.3"
+h5py = ">=3.7"
+numpy = ">=1.20"
+# Quarto for documentation
+quarto = ">=1.4"
+# Jupyter for interactive notebooks
+jupyterlab = ">=4.0"
+ipykernel = "*"
+# Visualization
+matplotlib = ">=3.5"
+# ParaView Python bindings (optional, for advanced viz)
+# paraview = ">=5.11"
+
+# =============================================================================
+# PyPI dependencies
+# =============================================================================
+[tool.pixi.pypi-dependencies]
+# Install fluvial-particle from GitHub
+fluvial-particle = { git = "https://github.com/rmcd-mscb/fluvial-particle.git", branch = "main" }
+# Or use local path for development:
+# fluvial-particle = { path = "../fluvial-particle", editable = true }
+
+# =============================================================================
+# Tasks
+# =============================================================================
+[tool.pixi.tasks]
+# Run a simulation
+simulate = "python -m fluvial_particle"
+
+# Render Quarto documents
+render = "quarto render"
+render-html = "quarto render --to html"
+render-pdf = "quarto render --to pdf"
+
+# Preview Quarto site
+preview = "quarto preview"
+
+# Start JupyterLab
+lab = "jupyter lab"
+
+# Clean outputs
+clean = "rm -rf _output outputs/*"
+
+# =============================================================================
+# Feature environments (optional)
+# =============================================================================
+[tool.pixi.feature.dev.dependencies]
+pytest = ">=7.0"
+ruff = ">=0.4"
+
+[tool.pixi.feature.dev.tasks]
+lint = "ruff check ."
+format = "ruff format ."
+test = "pytest"
+
+[tool.pixi.environments]
+default = { features = [], solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }

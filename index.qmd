@@ -1,0 +1,67 @@
+---
+title: "Fluvial Particle Examples"
+subtitle: "Lagrangian Particle Tracking in River Flows"
+---
+
+## Welcome
+
+This repository contains example datasets, tutorials, and visualizations for the [fluvial-particle](https://github.com/rmcd-mscb/fluvial-particle) Python package.
+
+## Quick Start
+
+```bash
+# Clone this repository
+git clone https://github.com/rmcd-mscb/fluvial-particle-examples.git
+cd fluvial-particle-examples
+
+# Install dependencies with pixi
+pixi install
+
+# Run an example simulation
+pixi run simulate --settings examples/basic/options_straight.py --output outputs/straight
+```
+
+## What is Fluvial Particle?
+
+Fluvial-particle is a Lagrangian particle tracking model for simulating the transport of particles (sediment, larvae, debris) in river flows. It uses pre-computed velocity fields from hydrodynamic models and tracks individual particles as they move through the flow.
+
+### Key Features
+
+- **2D and 3D tracking**: Track particles in depth-averaged or fully 3D velocity fields
+- **Multiple particle types**: Passive tracers, falling particles, larval behavior models
+- **Time-varying flows**: Support for unsteady flow conditions
+- **VTK integration**: Read VTS/VTK grids from CFD models
+- **Parallel computing**: MPI support for large-scale simulations
+
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| [Quickstart](examples/basic/quickstart.qmd) | Run your first simulation |
+| [Straight Channel](examples/basic/straight_channel.qmd) | Simple 2D tracking in a straight channel |
+| [3D Vertical Mixing](examples/3d_tracking/vertical_mixing.qmd) | 3D particle tracking with vertical dispersion |
+| [Unsteady Flow](examples/time_varying/unsteady_flow.qmd) | Time-varying velocity fields |
+
+## Datasets
+
+Example datasets are stored using [Git LFS](https://git-lfs.github.com/) for efficient handling of large files.
+
+| Dataset | Description | Size |
+|---------|-------------|------|
+| `data/grids/straight_channel/` | Simple straight channel (2D + 3D) | ~5 MB |
+| `data/grids/time_series/` | Time-varying flow (5 timesteps) | ~20 MB |
+
+## Installation
+
+This project uses [pixi](https://pixi.sh) for dependency management:
+
+```bash
+# Install pixi (if not already installed)
+curl -fsSL https://pixi.sh/install.sh | bash
+
+# Install all dependencies
+pixi install
+
+# Start JupyterLab for interactive exploration
+pixi run lab
+```

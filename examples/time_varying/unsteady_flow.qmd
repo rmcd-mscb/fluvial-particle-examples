@@ -1,0 +1,112 @@
+---
+title: "Time-Varying Flow Simulation"
+description: "Particle tracking with unsteady velocity fields"
+---
+
+## Overview
+
+This example demonstrates how to run particle tracking simulations with time-varying velocity fields from pre-computed flow solutions.
+
+## When to Use Time-Varying Grids
+
+Time-varying grids are useful when:
+
+- Flow conditions change significantly during the simulation period
+- You have output from an unsteady CFD simulation
+- You want to capture tidal, flood, or other transient flow effects
+
+## Input Data Format
+
+Time-varying simulations require a sequence of grid files with a consistent naming pattern:
+
+```
+data/grids/time_series/
+├── Result_2D_0.vts    # t = 0s
+├── Result_2D_1.vts    # t = 1s
+├── Result_2D_2.vts    # t = 2s
+├── ...
+├── Result_3D_0.vts
+├── Result_3D_1.vts
+└── ...
+```
+
+## Configuration
+
+Enable time-varying mode in your options file:
+
+```python
+# Time-varying grid settings
+time_dependent = True
+
+# File patterns with {} placeholder for index
+file_pattern_2d = "./data/grids/time_series/Result_2D_{}.vts"
+file_pattern_3d = "./data/grids/time_series/Result_3D_{}.vts"
+
+# Grid file indices
+grid_start_index = 0      # First file index
+grid_end_index = 10       # Last file index (inclusive)
+
+# Timing
+grid_dt = 60.0            # Time between grid files (seconds)
+grid_start_time = 0.0     # Simulation time of first grid
+
+# Interpolation method
+grid_interpolation = "linear"  # Options: "linear", "nearest", "hold"
+```
+
+## Interpolation Methods
+
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| `linear` | Linear interpolation between timesteps | Smooth transitions |
+| `nearest` | Use nearest grid timestep | Discrete jumps |
+| `hold` | Use current grid until next | Step changes |
+
+## Running the Simulation
+
+```{python}
+#| eval: false
+from fluvial_particle import simulate
+from fluvial_particle.Settings import Settings
+import time
+
+settings = Settings.read("examples/time_varying/options_unsteady.py")
+argdict = {
+    "settings_file": "examples/time_varying/options_unsteady.py",
+    "seed": 42,
+    "no_postprocess": False,
+    "output_directory": "outputs/unsteady",
+}
+simulate(settings, argdict, timer=time.time)
+```
+
+## Memory Considerations
+
+The `TimeVaryingGrid` class uses a sliding window approach:
+
+- Only 2 grids are kept in memory at a time
+- Grids are loaded on-demand as simulation progresses
+- Memory usage is independent of the number of timesteps
+
+## Example Output
+
+```{python}
+#| eval: false
+import h5py
+import matplotlib.pyplot as plt
+
+with h5py.File("outputs/unsteady/particles.h5", "r") as f:
+    x = f["coordinates"]["x"][:]
+    y = f["coordinates"]["y"][:]
+    t = f["time"][:]
+
+# Animate particle positions over time
+fig, ax = plt.subplots(figsize=(10, 6))
+for tidx in range(0, len(t), 10):
+    ax.clear()
+    ax.scatter(x[tidx, :], y[tidx, :], alpha=0.5, s=10)
+    ax.set_xlabel("x (m)")
+    ax.set_ylabel("y (m)")
+    ax.set_title(f"t = {t[tidx]:.1f} s")
+    plt.pause(0.1)
+```

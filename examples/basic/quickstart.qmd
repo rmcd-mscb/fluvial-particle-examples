@@ -17,76 +17,61 @@ pixi install
 
 ## Step 1: Prepare Your Configuration
 
-First, let's set up the paths and create a configuration file for our simulation:
+First, let's get the default settings template. The `get_settings_template()` function returns a complete settings file with all available options:
 
 ```{python}
 from pathlib import Path
-from fluvial_particle.Particles import Particles
+from fluvial_particle import get_settings_template
 
-# Define paths to our example data
-data_dir = Path("../../data/grids/FaSTMECH_straight")
-file_2d = data_dir / "Result_straight_2d_1.vts"
-file_3d = data_dir / "Result_straight_3d_1.vts"
-
-print(f"2D grid: {file_2d}")
-print(f"3D grid: {file_3d}")
-print(f"Files exist: 2D={file_2d.exists()}, 3D={file_3d.exists()}")
+# Get the default template
+template = get_settings_template()
+print(template)
 ```
 
-Create a settings file. This is the standard configuration format that works with both notebooks and the CLI:
+Now customize the template for our example data. We need to update:
+
+- File paths to point to our example grids
+- Particle starting location
+- Simulation duration and output frequency
 
 ```{python}
-# Define settings as a dictionary (easier to modify programmatically)
-config = {
-    "Track3D": 1,
-    "file_name_2d": str(file_2d),
-    "file_name_3d": str(file_3d),
-    "field_map_2d": {
-        "bed_elevation": "Elevation",
-        "shear_stress": "ShearStress (magnitude)",
-        "velocity": "Velocity",
-        "water_surface_elevation": "WaterSurfaceElevation",
-    },
-    "field_map_3d": {"velocity": "Velocity"},
-    "SimTime": 60.0,
-    "dt": 0.25,
-    "PrintAtTick": 5.0,
-    "NumPart": 50,
-    "StartLoc": (10.0, 0.0, 0.5),
-    "min_depth": 0.02,
-}
+# Define paths to our example data
+data_dir = Path("../../data/grids/FaSTMECH_straight")
+file_2d = str(data_dir / "Result_straight_2d_1.vts")
+file_3d = str(data_dir / "Result_straight_3d_1.vts")
+
+# Customize the template
+settings_content = template.replace(
+    'file_name_2d = "./path/to/your/mesh_2d.vts"',
+    f'file_name_2d = "{file_2d}"'
+).replace(
+    'file_name_3d = "./path/to/your/mesh_3d.vts"',
+    f'file_name_3d = "{file_3d}"'
+).replace(
+    'StartLoc = (0.0, 0.0, 0.0)',
+    'StartLoc = (10.0, 0.0, 0.5)'
+).replace(
+    'NumPart = 100',
+    'NumPart = 50'
+).replace(
+    'PrintAtTick = 10.0',
+    'PrintAtTick = 5.0'
+)
 
 # Write to settings file
-settings_content = f'''"""Particle tracking simulation settings."""
-from fluvial_particle.Particles import Particles
-
-# Grid configuration
-Track3D = {config["Track3D"]}
-file_name_2d = "{config["file_name_2d"]}"
-file_name_3d = "{config["file_name_3d"]}"
-
-# Field mappings (model-specific names -> standard names)
-field_map_2d = {config["field_map_2d"]}
-field_map_3d = {config["field_map_3d"]}
-
-# Simulation timing
-SimTime = {config["SimTime"]}
-dt = {config["dt"]}
-PrintAtTick = {config["PrintAtTick"]}
-
-# Particles
-NumPart = {config["NumPart"]}
-ParticleType = Particles
-StartLoc = {config["StartLoc"]}
-
-# Physics
-min_depth = {config["min_depth"]}
-'''
-
 settings_path = Path("user_options.py")
 settings_path.write_text(settings_content)
 print(f"Created settings file: {settings_path}")
 ```
+
+::: {.callout-tip}
+## Alternative: CLI initialization
+You can also generate the template from the command line:
+```bash
+fluvial_particle --init
+```
+This creates `user_options.py` in the current directory.
+:::
 
 ## Step 2: Explore Your Grid Data
 
@@ -202,7 +187,8 @@ plt.show()
 
 ```{python}
 # Vertical distribution over time (for 3D simulations)
-if config["Track3D"] == 1:
+# Check if we have meaningful z variation (3D tracking)
+if positions[:, :, 2].std() > 0.01:
     fig, ax = plt.subplots(figsize=(10, 4))
 
     # Color by time
@@ -244,8 +230,8 @@ print(f"Available arrays: {list(particles.point_data.keys())}")
 ```
 
 ```{python}
-# Load the input grid
-grid_2d = pv.read(config["file_name_2d"])
+# Load the input grid (using path from earlier)
+grid_2d = pv.read(file_2d)
 
 # Create visualization with particles overlaid on grid
 plotter = pv.Plotter()

@@ -32,7 +32,7 @@ dependencies:
   - jupyterlab>=4.0
   - ipykernel
 
-  # pip for fluvial-particle (not on conda-forge)
+  # pip for fluvial-particle (installed from GitHub)
   - pip
   - pip:
-    - fluvial-particle>=0.0.6
+    - fluvial-particle @ git+https://github.com/rmcd-mscb/fluvial-particle.git@main

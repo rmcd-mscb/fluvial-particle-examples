@@ -29,7 +29,7 @@ dependencies:
   - ipykernel
   - pip
   - pip:
-    - fluvial-particle
+    - fluvial-particle @ git+https://github.com/rmcd-mscb/fluvial-particle.git@main
 ```
 
 ### Step 2: Create the environment
@@ -161,7 +161,7 @@ min_depth = 0.02  # Minimum depth for wet cells (meters)
 
 ```bash
 conda activate fluvial-particle
-pip install --upgrade fluvial-particle
+pip install --upgrade fluvial-particle @ git+https://github.com/rmcd-mscb/fluvial-particle.git@main
 ```
 
 ### Check version

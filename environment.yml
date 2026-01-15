@@ -7,7 +7,7 @@
 # After activation, register as Jupyter kernel:
 #   python -m ipykernel install --user --name fluvial-particle --display-name "Fluvial Particle"
 
-name: fluvial-particle
+name: fluvial-particle-exmamples
 
 channels:
   - conda-forge

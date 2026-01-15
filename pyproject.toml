@@ -19,7 +19,7 @@ dependencies = []
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 
@@ -36,8 +36,12 @@ quarto = ">=1.4"
 # Jupyter for interactive notebooks
 jupyterlab = ">=4.0"
 ipykernel = "*"
+jupyter-cache = "*"
 # Visualization
 matplotlib = ">=3.5"
+# Data analysis
+pandas = ">=2.0"
+pyvista = ">=0.46.4,<0.47"
 # ParaView Python bindings (optional, for advanced viz)
 # paraview = ">=5.11"
 
@@ -45,10 +49,10 @@ matplotlib = ">=3.5"
 # PyPI dependencies
 # =============================================================================
 [tool.pixi.pypi-dependencies]
-# Install fluvial-particle from GitHub
-fluvial-particle = { git = "https://github.com/rmcd-mscb/fluvial-particle.git", branch = "main" }
-# Or use local path for development:
-# fluvial-particle = { path = "../fluvial-particle", editable = true }
+# Install fluvial-particle from local path for development
+fluvial-particle = { path = "../fluvial-particle", editable = true }
+# Or use GitHub for releases:
+# fluvial-particle = { git = "https://github.com/rmcd-mscb/fluvial-particle.git", branch = "main" }
 
 # =============================================================================
 # Tasks

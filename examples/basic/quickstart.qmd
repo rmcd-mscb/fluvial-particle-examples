@@ -5,7 +5,7 @@ description: "Run your first fluvial-particle simulation in 5 minutes"
 
 ## Overview
 
-This tutorial walks you through running a basic particle tracking simulation using pre-computed velocity fields.
+This tutorial walks you through running a basic particle tracking simulation using pre-computed velocity fields from a hydrodynamic model.
 
 ## Prerequisites
 
@@ -15,117 +15,378 @@ Make sure you have pixi installed and dependencies set up:
 pixi install
 ```
 
-## Step 1: Prepare Input Data
+## Step 1: Prepare Your Configuration
 
-Fluvial-particle requires velocity field data in VTK Structured Grid format (`.vts`). This example uses a simple straight channel dataset included in this repository.
+First, let's set up the paths and create a configuration file for our simulation:
 
 ```{python}
-#| eval: false
 from pathlib import Path
+from fluvial_particle.Particles import Particles
 
-# Check that data files exist
-data_dir = Path("../../data/grids/straight_channel")
-print(f"2D grid: {data_dir / 'Result_2D.vts'}")
-print(f"3D grid: {data_dir / 'Result_3D.vts'}")
+# Define paths to our example data
+data_dir = Path("../../data/grids/FaSTMECH_straight")
+file_2d = data_dir / "Result_straight_2d_1.vts"
+file_3d = data_dir / "Result_straight_3d_1.vts"
+
+print(f"2D grid: {file_2d}")
+print(f"3D grid: {file_3d}")
+print(f"Files exist: 2D={file_2d.exists()}, 3D={file_3d.exists()}")
 ```
 
-## Step 2: Create Options File
-
-The simulation is configured through a Python options file:
+Create a settings file. This is the standard configuration format that works with both notebooks and the CLI:
 
 ```{python}
-#| eval: false
-#| code-fold: true
-#| code-summary: "Show options file"
-
-# Example options file content
-options = '''
-# Simulation parameters
-SimTime = 100.0        # Total simulation time (seconds)
-dt = 0.1               # Timestep (seconds)
-NumPart = 100          # Number of particles
-Track3D = 0            # 0 = 2D, 1 = 3D
-
-# Grid files
-file_name_2d = "./data/grids/straight_channel/Result_2D.vts"
-file_name_3d = "./data/grids/straight_channel/Result_3D.vts"
-
-# Initial particle position (x, y, z)
-StartLoc = (10.0, 5.0, 0.5)
-
-# Output settings
-PrintAtTick = 10.0     # Save every 10 seconds
-
-# Field name mapping (maps your model's names to standard names)
-field_map_2d = {
-    "bed_elevation": "Elevation",
-    "shear_stress": "ShearStress",
-    "velocity": "Velocity",
-    "water_surface_elevation": "WaterSurfaceElevation",
+# Define settings as a dictionary (easier to modify programmatically)
+config = {
+    "Track3D": 1,
+    "file_name_2d": str(file_2d),
+    "file_name_3d": str(file_3d),
+    "field_map_2d": {
+        "bed_elevation": "Elevation",
+        "shear_stress": "ShearStress (magnitude)",
+        "velocity": "Velocity",
+        "water_surface_elevation": "WaterSurfaceElevation",
+    },
+    "field_map_3d": {"velocity": "Velocity"},
+    "SimTime": 60.0,
+    "dt": 0.25,
+    "PrintAtTick": 5.0,
+    "NumPart": 50,
+    "StartLoc": (10.0, 0.0, 0.5),
+    "min_depth": 0.02,
 }
-field_map_3d = {"velocity": "Velocity"}
+
+# Write to settings file
+settings_content = f'''"""Particle tracking simulation settings."""
+from fluvial_particle.Particles import Particles
+
+# Grid configuration
+Track3D = {config["Track3D"]}
+file_name_2d = "{config["file_name_2d"]}"
+file_name_3d = "{config["file_name_3d"]}"
+
+# Field mappings (model-specific names -> standard names)
+field_map_2d = {config["field_map_2d"]}
+field_map_3d = {config["field_map_3d"]}
+
+# Simulation timing
+SimTime = {config["SimTime"]}
+dt = {config["dt"]}
+PrintAtTick = {config["PrintAtTick"]}
+
+# Particles
+NumPart = {config["NumPart"]}
+ParticleType = Particles
+StartLoc = {config["StartLoc"]}
+
+# Physics
+min_depth = {config["min_depth"]}
 '''
-print(options)
+
+settings_path = Path("user_options.py")
+settings_path.write_text(settings_content)
+print(f"Created settings file: {settings_path}")
+```
+
+## Step 2: Explore Your Grid Data
+
+Before running a simulation, use `inspect_grid` to understand your input data:
+
+```{python}
+from fluvial_particle import inspect_grid
+
+# Inspect the grid - prints summary and returns detailed info
+info = inspect_grid(settings_path)
+```
+
+The returned dictionary contains all the information programmatically:
+
+```{python}
+# Access specific information
+print(f"\nGrid dimensions: {info['grid_2d']['dimensions']}")
+print(f"Mean depth: {info['hydraulics']['depth']['mean']:.3f} m")
+print(f"Mean velocity: {info['hydraulics']['velocity_mag']['mean']:.3f} m/s")
+print(f"u* method: {info['ustar_method']}")
+print(f"Available 2D scalars: {info['grid_2d']['scalars']}")
 ```
 
 ## Step 3: Run the Simulation
 
+The `run_simulation` function provides a clean notebook interface:
+
+```{python}
+from fluvial_particle import run_simulation
+
+# Create output directory
+output_dir = Path("outputs/quickstart")
+output_dir.mkdir(parents=True, exist_ok=True)
+
+# Run simulation - returns SimulationResults object
+results = run_simulation(
+    settings_file=settings_path,
+    output_dir=output_dir,
+    seed=12345,  # For reproducibility
+)
+
+print(f"Simulation complete!")
+print(f"Output directory: {results.output_dir}")
+```
+
+### Alternative: Using the CLI
+
+For batch processing or scripts, use the command line with the settings file:
+
 ```bash
-# Using the CLI
-pixi run simulate --settings options.py --output outputs/quickstart
-
-# Or using Python directly
-pixi run python -c "
-from fluvial_particle import simulate
-from fluvial_particle.Settings import Settings
-import time
-
-settings = Settings.read('options.py')
-argdict = {
-    'settings_file': 'options.py',
-    'seed': 12345,
-    'no_postprocess': False,
-    'output_directory': 'outputs/quickstart'
-}
-simulate(settings, argdict, timer=time.time)
-"
+# Using the settings file we created
+pixi run fluvial_particle --settings user_options.py --output outputs/quickstart
 ```
 
-## Step 4: Examine Output
+## Step 4: Analyze Results
 
-The simulation creates several output files:
+The `SimulationResults` object provides easy access to output data:
 
-```
-outputs/quickstart/
-├── particles.h5      # HDF5 particle trajectories
-├── particles.xmf     # XDMF metadata for ParaView
-├── cells.h5          # Cell-centered statistics
-└── cells_2d.xmf      # Cell XDMF metadata
+```{python}
+# Show summary
+print(results.summary())
 ```
 
 ```{python}
-#| eval: false
-import h5py
+# Load trajectories as a DataFrame
+df = results.to_dataframe()
+print(f"Trajectory data shape: {df.shape}")
+print(f"Columns: {list(df.columns)}")
+df.head()
+```
+
+```{python}
+# Get particle positions at specific times
+positions = results.get_positions()
+print(f"Position array shape: {positions.shape}")  # (timesteps, particles, 3)
+print(f"Number of timesteps: {len(results.times)}")
+print(f"Time range: {results.times[0]:.1f} to {results.times[-1]:.1f} seconds")
+```
+
+## Step 5: Visualize Trajectories
+
+```{python}
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Load particle trajectories
-with h5py.File("outputs/quickstart/particles.h5", "r") as f:
-    x = f["coordinates"]["x"][:]
-    y = f["coordinates"]["y"][:]
-    t = f["time"][:]
+# Get positions
+positions = results.get_positions()
+times = results.times
 
-# Plot trajectories
-plt.figure(figsize=(10, 4))
-for i in range(min(10, x.shape[1])):  # Plot first 10 particles
-    plt.plot(x[:, i], y[:, i], alpha=0.5)
-plt.xlabel("x (m)")
-plt.ylabel("y (m)")
-plt.title("Particle Trajectories")
+# Plot particle trajectories (x-y plane)
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+# Left: X-Y trajectories
+ax1 = axes[0]
+for i in range(min(10, positions.shape[1])):
+    ax1.plot(positions[:, i, 0], positions[:, i, 1], alpha=0.6, linewidth=0.8)
+ax1.set_xlabel("x (m)")
+ax1.set_ylabel("y (m)")
+ax1.set_title("Particle Trajectories (Plan View)")
+ax1.set_aspect('equal')
+
+# Right: X position over time
+ax2 = axes[1]
+for i in range(min(10, positions.shape[1])):
+    ax2.plot(times, positions[:, i, 0], alpha=0.6, linewidth=0.8)
+ax2.set_xlabel("Time (s)")
+ax2.set_ylabel("x position (m)")
+ax2.set_title("Downstream Transport")
+
+plt.tight_layout()
 plt.show()
 ```
 
+```{python}
+# Vertical distribution over time (for 3D simulations)
+if config["Track3D"] == 1:
+    fig, ax = plt.subplots(figsize=(10, 4))
+
+    # Color by time
+    colors = plt.cm.viridis(np.linspace(0, 1, len(times)))
+
+    for t_idx in range(0, len(times), 2):  # Every other timestep
+        z_positions = positions[t_idx, :, 2]
+        ax.scatter(
+            [times[t_idx]] * len(z_positions),
+            z_positions,
+            c=[colors[t_idx]],
+            alpha=0.3,
+            s=10
+        )
+
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("z position (m)")
+    ax.set_title("Vertical Distribution Over Time")
+    plt.show()
+```
+
+## Step 6: PyVista 3D Visualization (Optional)
+
+For interactive 3D visualization, use PyVista. The `SimulationResults` class provides helper methods that return PyVista-compatible objects.
+
+### Particle Point Cloud
+
+```{python}
+import pyvista as pv
+
+# Set backend for notebooks
+pv.set_jupyter_backend('static')  # Use 'trame' for interactive
+
+# Convert results to PyVista PolyData
+particles = results.to_pyvista(timestep=-1)
+
+print(f"Points: {particles.n_points}")
+print(f"Available arrays: {list(particles.point_data.keys())}")
+```
+
+```{python}
+# Load the input grid
+grid_2d = pv.read(config["file_name_2d"])
+
+# Create visualization with particles overlaid on grid
+plotter = pv.Plotter()
+plotter.add_mesh(
+    grid_2d,
+    scalars="Velocity (magnitude)",
+    cmap="viridis",
+    opacity=0.8,
+    scalar_bar_args={"title": "Velocity (m/s)"}
+)
+plotter.add_points(
+    particles,
+    scalars="depth",
+    cmap="plasma",
+    point_size=12,
+    render_points_as_spheres=True,
+    scalar_bar_args={"title": "Depth at particle (m)"}
+)
+plotter.view_xy()
+plotter.show()
+```
+
+### Particle Trajectories
+
+```{python}
+# Get trajectories as connected lines
+trajectories = results.trajectories_to_pyvista()
+
+print(f"Total points: {trajectories.n_points}")
+print(f"Number of trajectories: {trajectories.n_lines}")
+```
+
+```{python}
+# Plot trajectories colored by time
+plotter = pv.Plotter()
+plotter.add_mesh(grid_2d, scalars="Depth", cmap="Blues", opacity=0.5)
+plotter.add_mesh(
+    trajectories,
+    scalars="time",
+    cmap="viridis",
+    line_width=3,
+    scalar_bar_args={"title": "Time (s)"}
+)
+plotter.view_xy()
+plotter.show()
+```
+
+### Specific Particle Trajectories
+
+```{python}
+# Get trajectories for specific particles
+selected_traj = results.trajectories_to_pyvista(particle_ids=[0, 5, 10, 15, 20])
+
+plotter = pv.Plotter()
+plotter.add_mesh(grid_2d, color="lightgray", opacity=0.3)
+plotter.add_mesh(
+    selected_traj,
+    scalars="particle_id",
+    cmap="tab10",
+    line_width=4,
+    scalar_bar_args={"title": "Particle ID"}
+)
+plotter.view_xy()
+plotter.show()
+```
+
+## Step 7: Output Files
+
+The simulation creates several output files for further analysis:
+
+```{python}
+# List output files
+print("Output files:")
+for f in sorted(output_dir.iterdir()):
+    if f.is_file():
+        size = f.stat().st_size / 1024  # KB
+        print(f"  {f.name}: {size:.1f} KB")
+```
+
+| File | Description |
+|------|-------------|
+| `particles.h5` | HDF5 file with particle trajectories |
+| `particles.xmf` | XDMF metadata for ParaView |
+| `cells.h5` | Cell-centered statistics |
+| `cells_*.xmf` | Cell XDMF files |
+
+Open `particles.xmf` in ParaView for 3D visualization.
+
+## Summary
+
+Key functions for notebook workflows:
+
+| Function | Purpose |
+|----------|---------|
+| `inspect_grid()` | Explore grid data before simulation |
+| `run_simulation()` | Run simulation from settings file |
+| `SimulationResults` | Access and analyze output data |
+
+### Configuration Pattern for Notebooks
+
+The recommended pattern for notebooks is:
+
+1. **Define settings as a dictionary** - easy to modify programmatically
+2. **Write to a settings file** - enables `inspect_grid()` and CLI use
+3. **Run with `run_simulation()`** - returns results for analysis
+
+```python
+# Pattern for dynamic settings
+config = {"SimTime": 100.0, "NumPart": 200, ...}
+settings_path.write_text(generate_settings_string(config))
+results = run_simulation(settings_path, output_dir)
+```
+
+### Configuration Options
+
+The settings file supports many options:
+
+**Required:**
+
+- `Track3D`: 0 for 2D, 1 for 3D simulation
+- `file_name_2d`, `file_name_3d`: Paths to VTS/VTK grid files
+- `field_map_2d`, `field_map_3d`: Map model field names to standard names
+- `SimTime`, `dt`, `PrintAtTick`: Timing parameters
+- `NumPart`, `StartLoc`, `ParticleType`: Particle configuration
+
+**Shear Velocity (u\*):**
+
+- Automatically computed from `shear_stress` in field_map_2d
+- Or use `manning_n`, `chezy_c`, `darcy_f` as scalar values
+- Or map `ustar`, `energy_slope`, `tke` fields
+
+**Physics:**
+
+- `min_depth`: Depth threshold for wet/dry classification
+- `beta`: Diffusion coefficients (tuple of 3 values)
+- `lev`: Lateral eddy viscosity
+
+See the [Options File Reference](options_file.qmd) for the complete list.
+
 ## Next Steps
 
-- [Options File Guide](options_file.qmd) - Learn about all configuration options
-- [Straight Channel](straight_channel.qmd) - Detailed 2D simulation example
-- [ParaView Visualization](../visualization/paraview.qmd) - Visualize results in ParaView
+- [Options File Reference](options_file.qmd) - All configuration options
+- [Time-Varying Grids](../advanced/time_varying.qmd) - Unsteady flow simulations
+- [ParaView Visualization](../visualization/paraview.qmd) - 3D visualization

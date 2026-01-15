@@ -1,0 +1,271 @@
+---
+title: "PyVista Visualization"
+description: "Interactive 3D visualization with PyVista and native VTK formats"
+---
+
+## Overview
+
+PyVista provides a Pythonic interface to VTK, making it ideal for visualizing fluvial-particle data since both input grids and output trajectories use VTK formats.
+
+## Setup
+
+```{python}
+#| eval: false
+import pyvista as pv
+from pathlib import Path
+
+# For Jupyter notebooks: enable interactive plotting
+pv.set_jupyter_backend('trame')  # or 'static' for non-interactive
+```
+
+## Loading Grid Data
+
+PyVista can directly load VTK Structured Grid files (.vts):
+
+```{python}
+#| eval: false
+# Load 2D grid
+grid_2d = pv.read("../../data/grids/FaSTMECH_straight/Result_straight_2d_1.vts")
+
+print(f"Grid dimensions: {grid_2d.dimensions}")
+print(f"Bounds: {grid_2d.bounds}")
+print(f"Available arrays: {list(grid_2d.point_data.keys())}")
+```
+
+## Visualizing the Grid
+
+### Velocity Field
+
+```{python}
+#| eval: false
+# Simple velocity magnitude plot
+grid_2d.plot(
+    scalars="Velocity (magnitude)",
+    cmap="viridis",
+    scalar_bar_args={"title": "Velocity (m/s)"},
+)
+```
+
+### Bed Elevation
+
+```{python}
+#| eval: false
+# Warp by elevation for 3D effect
+warped = grid_2d.warp_by_scalar("Elevation", factor=5)
+warped.plot(
+    scalars="Elevation",
+    cmap="terrain",
+    scalar_bar_args={"title": "Bed Elevation (m)"},
+)
+```
+
+### Velocity Vectors
+
+```{python}
+#| eval: false
+# Show velocity vectors (subsample for clarity)
+arrows = grid_2d.glyph(
+    orient="Velocity",
+    scale="Velocity (magnitude)",
+    factor=0.5,
+)
+
+plotter = pv.Plotter()
+plotter.add_mesh(grid_2d, scalars="Depth", cmap="Blues", opacity=0.7)
+plotter.add_mesh(arrows, color="red")
+plotter.view_xy()
+plotter.show()
+```
+
+## Loading Particle Data
+
+When `output_vtp = True`, particle trajectories are saved as VTP files:
+
+```{python}
+#| eval: false
+# Load particle data from a single timestep
+particles = pv.read("outputs/quickstart/vtp/particles_0010.vtp")
+
+print(f"Number of particles: {particles.n_points}")
+print(f"Available arrays: {list(particles.point_data.keys())}")
+```
+
+### Load All Timesteps
+
+```{python}
+#| eval: false
+# Load the PVD collection (all timesteps)
+from pathlib import Path
+
+vtp_dir = Path("outputs/quickstart/vtp")
+vtp_files = sorted(vtp_dir.glob("*.vtp"))
+
+# Load each timestep
+timesteps = [pv.read(f) for f in vtp_files]
+print(f"Loaded {len(timesteps)} timesteps")
+```
+
+## Combined Visualization
+
+### Grid + Particles
+
+```{python}
+#| eval: false
+# Overlay particles on the grid
+plotter = pv.Plotter()
+
+# Add grid colored by velocity
+plotter.add_mesh(
+    grid_2d,
+    scalars="Velocity (magnitude)",
+    cmap="viridis",
+    opacity=0.8,
+)
+
+# Add particles as spheres
+plotter.add_points(
+    particles,
+    color="red",
+    point_size=10,
+    render_points_as_spheres=True,
+)
+
+plotter.view_xy()
+plotter.show()
+```
+
+### Particles Colored by Property
+
+```{python}
+#| eval: false
+# Color particles by depth at their location
+plotter = pv.Plotter()
+
+plotter.add_mesh(grid_2d, scalars="Depth", cmap="Blues", opacity=0.5)
+plotter.add_points(
+    particles,
+    scalars="depth",  # particle property from simulation
+    cmap="plasma",
+    point_size=10,
+    render_points_as_spheres=True,
+    scalar_bar_args={"title": "Depth at Particle (m)"},
+)
+
+plotter.view_xy()
+plotter.show()
+```
+
+## 3D Visualization
+
+### 3D Grid with Particles
+
+```{python}
+#| eval: false
+# Load 3D grid
+grid_3d = pv.read("../../data/grids/FaSTMECH_straight/Result_straight_3d_1.vts")
+
+plotter = pv.Plotter()
+
+# Add 3D grid as wireframe or volume
+plotter.add_mesh(
+    grid_3d.outline(),
+    color="gray",
+    line_width=2,
+)
+
+# Add velocity magnitude as volume rendering
+plotter.add_volume(
+    grid_3d,
+    scalars="Velocity",
+    cmap="viridis",
+    opacity="sigmoid",
+)
+
+# Add particles
+plotter.add_points(
+    particles,
+    color="red",
+    point_size=8,
+    render_points_as_spheres=True,
+)
+
+plotter.show()
+```
+
+## Animation
+
+### Animate Particle Trajectories
+
+```{python}
+#| eval: false
+# Create animation of particle movement
+plotter = pv.Plotter(off_screen=True)
+plotter.add_mesh(grid_2d, scalars="Velocity (magnitude)", cmap="viridis", opacity=0.7)
+
+# Open a movie file
+plotter.open_gif("particle_animation.gif")
+
+for i, timestep in enumerate(timesteps):
+    # Clear previous particles
+    plotter.clear_actors()
+    plotter.add_mesh(grid_2d, scalars="Velocity (magnitude)", cmap="viridis", opacity=0.7)
+    plotter.add_points(timestep, color="red", point_size=10, render_points_as_spheres=True)
+    plotter.view_xy()
+    plotter.write_frame()
+
+plotter.close()
+print("Saved: particle_animation.gif")
+```
+
+## Multi-Panel Plots
+
+```{python}
+#| eval: false
+# Create side-by-side comparison
+plotter = pv.Plotter(shape=(1, 2))
+
+# Left: Velocity field
+plotter.subplot(0, 0)
+plotter.add_mesh(grid_2d, scalars="Velocity (magnitude)", cmap="viridis")
+plotter.add_title("Velocity Magnitude")
+plotter.view_xy()
+
+# Right: Shear stress
+plotter.subplot(0, 1)
+plotter.add_mesh(grid_2d, scalars="ShearStress (magnitude)", cmap="hot")
+plotter.add_title("Shear Stress")
+plotter.view_xy()
+
+plotter.link_views()
+plotter.show()
+```
+
+## Jupyter Backend Options
+
+PyVista supports multiple backends for Jupyter:
+
+| Backend | Description |
+|---------|-------------|
+| `trame` | Interactive (recommended), requires trame installed |
+| `static` | Static images, works everywhere |
+| `html` | Export to standalone HTML |
+| `panel` | Panel-based interactive |
+
+```{python}
+#| eval: false
+# Set the backend
+pv.set_jupyter_backend('trame')  # Interactive
+# pv.set_jupyter_backend('static')  # Static images
+```
+
+## Tips
+
+1. **Memory**: For large simulations, load timesteps one at a time rather than all at once
+2. **Performance**: Use `opacity` and subsampling for large grids
+3. **Export**: Use `plotter.screenshot("image.png")` for high-quality images
+4. **HTML Export**: Use `plotter.export_html("viz.html")` for shareable interactive views
+
+## Next Steps
+
+- [ParaView Visualization](paraview.qmd) - Advanced visualization in ParaView
+- [Quickstart](../basic/quickstart.qmd) - Basic simulation workflow

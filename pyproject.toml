@@ -35,7 +35,7 @@ numpy = ">=1.20"
 quarto = ">=1.4"
 # Jupyter for interactive notebooks
 jupyterlab = ">=4.0"
-ipykernel = "*"
+ipykernel = ">=7.1.0,<8"
 jupyter-cache = "*"
 # Visualization
 matplotlib = ">=3.5"
@@ -74,6 +74,13 @@ lab = "jupyter lab"
 
 # Clean outputs
 clean = "rm -rf _output outputs/*"
+
+# Register Jupyter kernel for VS Code
+register-kernel = """python -m ipykernel install --user \
+  --name fluvial-examples \
+  --display-name "Fluvial Examples (pixi)" \
+  --env PATH "$CONDA_PREFIX/bin:/usr/local/bin:/usr/bin:/bin" \
+  --env CONDA_PREFIX "$CONDA_PREFIX" """
 
 # =============================================================================
 # Feature environments (optional)

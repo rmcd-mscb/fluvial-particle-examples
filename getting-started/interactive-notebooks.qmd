@@ -1,0 +1,151 @@
+---
+title: "Running Notebooks Interactively"
+description: "Set up VS Code to run example notebooks interactively with pixi"
+---
+
+## Overview
+
+This guide explains how to run the example `.qmd` notebooks interactively in VS Code using the pixi environment. This is useful for:
+
+- Stepping through examples cell by cell
+- Experimenting with parameters
+- Developing new examples
+
+## Prerequisites
+
+1. **VS Code** with the following extensions:
+   - [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+   - [Jupyter](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter)
+   - [Quarto](https://marketplace.visualstudio.com/items?itemName=quarto.quarto)
+
+2. **pixi** installed and environment set up:
+   ```bash
+   pixi install
+   ```
+
+## The Challenge: Jupyter Kernels
+
+VS Code's Python extension auto-discovers conda and venv environments, but **pixi environments require manual kernel registration**. This is because:
+
+- Jupyter kernels are a separate system from Python environments
+- VS Code discovers environments but uses Jupyter's kernel registry for notebooks
+- pixi environments aren't automatically registered as Jupyter kernels
+
+### What is a Jupyter Kernel?
+
+A kernel is a process that runs your code. When you execute a notebook cell:
+
+```
+┌─────────────┐       ┌──────────────────┐
+│  VS Code    │ ───── │  Kernel Process  │
+│  (frontend) │ JSON  │  (runs Python)   │
+└─────────────┘       └──────────────────┘
+```
+
+Each kernel has a `kernel.json` file that specifies:
+
+- Path to the Python executable
+- Environment variables needed
+- Display name shown in VS Code
+
+## Register the Kernel
+
+We provide a pixi task that registers the kernel with the correct settings:
+
+```bash
+pixi run register-kernel
+```
+
+This creates a Jupyter kernel named "Fluvial Examples (pixi)" that:
+
+- Points to the pixi environment's Python
+- Sets required environment variables (`PATH`, `CONDA_PREFIX`)
+- Works correctly with VS Code's Jupyter extension
+
+### What the task does
+
+The `register-kernel` task runs:
+
+```bash
+python -m ipykernel install --user \
+  --name fluvial-examples \
+  --display-name "Fluvial Examples (pixi)" \
+  --env PATH "$CONDA_PREFIX/bin:..." \
+  --env CONDA_PREFIX "$CONDA_PREFIX"
+```
+
+The kernel specification is saved to `~/.local/share/jupyter/kernels/fluvial-examples/`.
+
+## Select the Kernel in VS Code
+
+1. Open a `.qmd` file (e.g., `examples/basic/quickstart.qmd`)
+2. Click the kernel selector in the top-right corner
+3. Select **"Select Another Kernel"**
+4. Choose **"Jupyter Kernel..."** (not "Python Environments")
+5. Select **"Fluvial Examples (pixi)"**
+
+::: {.callout-note}
+If you don't see the kernel, try reloading VS Code: `Ctrl+Shift+P` → "Developer: Reload Window"
+:::
+
+## Run Cells Interactively
+
+With the kernel selected, you can:
+
+- **Run a cell**: Click the play button or press `Shift+Enter`
+- **Run all cells**: Click "Run All" in the toolbar
+- **Restart kernel**: `Ctrl+Shift+P` → "Jupyter: Restart Kernel"
+
+## Troubleshooting
+
+### Kernel won't connect
+
+If the kernel fails to connect:
+
+1. Check that `ipykernel` is installed:
+   ```bash
+   pixi run python -c "import ipykernel; print(ipykernel.__version__)"
+   ```
+
+2. Re-register the kernel:
+   ```bash
+   pixi run register-kernel
+   ```
+
+3. Reload VS Code
+
+### "Module not found" errors
+
+Ensure you selected "Jupyter Kernel..." → "Fluvial Examples (pixi)", not a Python environment.
+
+### Kernel registered but not visible
+
+The kernel may not appear in "Python Environments" - look under "Jupyter Kernel..." instead.
+
+## Useful Commands
+
+```bash
+# List all registered kernels
+jupyter kernelspec list
+
+# Remove a kernel
+jupyter kernelspec remove fluvial-examples
+
+# View kernel configuration
+cat ~/.local/share/jupyter/kernels/fluvial-examples/kernel.json
+```
+
+## Alternative: Launch VS Code from pixi
+
+If kernel registration doesn't work, you can launch VS Code with the pixi environment already active:
+
+```bash
+pixi run code .
+```
+
+This sets all environment variables before VS Code starts, which can help with kernel connectivity.
+
+## Next Steps
+
+- [Quickstart Tutorial](../examples/basic/quickstart.qmd) - Run your first simulation
+- [User Environment Setup](user-environment.qmd) - Create your own environment outside this repo

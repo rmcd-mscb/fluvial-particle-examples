@@ -21,6 +21,13 @@ pixi install
 pixi run simulate --settings examples/basic/options_straight.py --output outputs/straight
 ```
 
+## Getting Started
+
+| Guide | Description |
+|-------|-------------|
+| [Running Notebooks Interactively](getting-started/interactive-notebooks.qmd) | Set up VS Code to run examples with pixi |
+| [Setting Up Your Own Environment](getting-started/user-environment.qmd) | Create a conda environment for your projects |
+
 ## What is Fluvial Particle?
 
 Fluvial-particle is a Lagrangian particle tracking model for simulating the transport of particles (sediment, larvae, debris) in river flows. It uses pre-computed velocity fields from hydrodynamic models and tracks individual particles as they move through the flow.

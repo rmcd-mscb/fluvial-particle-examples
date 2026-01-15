@@ -1,0 +1,200 @@
+---
+title: "Setting Up Your Own Environment"
+description: "Create a conda environment for using fluvial-particle in your own projects"
+---
+## Overview
+
+This guide shows how to set up a standalone conda environment for using `fluvial-particle` in your own notebooks and projects, outside of this examples repository.
+
+## Option 1: Conda Environment (Recommended)
+
+We provide an `environment.yml` file that creates a complete environment with all dependencies.
+
+### Step 1: Download the environment file
+
+Download [environment.yml](../environment.yml) or create it with this content:
+```yaml
+name: fluvial-particle
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.11,<3.14
+  - vtk>=9.3
+  - h5py>=3.7
+  - numpy>=1.20
+  - matplotlib>=3.5
+  - pandas>=2.0
+  - pyvista>=0.43
+  - jupyterlab>=4.0
+  - ipykernel
+  - pip
+  - pip:
+    - fluvial-particle
+```
+
+### Step 2: Create the environment
+
+```bash
+conda env create -f environment.yml
+```
+
+### Step 3: Activate and register the kernel
+
+```bash
+conda activate fluvial-particle
+
+# Register as a Jupyter kernel for VS Code/JupyterLab
+python -m ipykernel install --user \
+  --name fluvial-particle \
+  --display-name "Fluvial Particle"
+```
+
+### Step 4: Verify installation
+
+```bash
+python -c "import fluvial_particle; print(f'Version: {fluvial_particle.__version__}')"
+```
+
+## Option 2: pip with System Dependencies
+
+If you have VTK and HDF5 available system-wide (or via conda base):
+
+```bash
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+
+# Install fluvial-particle
+pip install fluvial-particle
+
+# Install optional dependencies for notebooks
+pip install matplotlib pandas pyvista jupyterlab ipykernel
+
+# Register kernel
+python -m ipykernel install --user --name my-project --display-name "My Project"
+```
+
+::: {.callout-warning}
+VTK wheels from PyPI can be problematic on some systems. The conda approach is more reliable.
+:::
+
+## Using in Your Notebooks
+
+### Basic Import
+
+```python
+from fluvial_particle import run_simulation, inspect_grid, SimulationResults
+```
+
+### Typical Workflow
+
+```python
+from pathlib import Path
+from fluvial_particle import run_simulation, inspect_grid
+
+# 1. Inspect your grid data
+info = inspect_grid("my_settings.py")
+
+# 2. Run simulation
+results = run_simulation(
+    settings_file="my_settings.py",
+    output_dir=Path("./output"),
+    seed=42
+)
+
+# 3. Analyze results
+print(results.summary())
+df = results.to_dataframe()
+
+# 4. Visualize with PyVista (optional)
+particles = results.to_pyvista(timestep=-1)
+trajectories = results.trajectories_to_pyvista()
+```
+
+## Creating a Settings File
+
+You need a Python settings file for your simulation. Use `fluvial_particle --init` to generate a template:
+
+```bash
+fluvial_particle --init
+# Creates user_options.py in current directory
+```
+
+Or create manually:
+
+```python
+"""Particle tracking simulation settings."""
+from fluvial_particle.Particles import Particles
+
+# Grid files (VTS format recommended)
+Track3D = 1  # 0 for 2D, 1 for 3D
+file_name_2d = "path/to/grid_2d.vts"
+file_name_3d = "path/to/grid_3d.vts"
+
+# Field mappings (your model's names -> standard names)
+field_map_2d = {
+    "bed_elevation": "Elevation",
+    "shear_stress": "ShearStress",
+    "velocity": "Velocity",
+    "water_surface_elevation": "WSE",
+}
+field_map_3d = {"velocity": "Velocity"}
+
+# Simulation timing
+SimTime = 100.0      # Total simulation time (seconds)
+dt = 0.5             # Timestep (seconds)
+PrintAtTick = 10.0   # Output interval (seconds)
+
+# Particles
+NumPart = 100
+ParticleType = Particles
+StartLoc = (10.0, 0.0, 0.5)  # (x, y, z) release location
+
+# Physics
+min_depth = 0.02  # Minimum depth for wet cells (meters)
+```
+
+## Updating fluvial-particle
+
+### Conda environment
+
+```bash
+conda activate fluvial-particle
+pip install --upgrade fluvial-particle
+```
+
+### Check version
+
+```bash
+python -c "import fluvial_particle; print(fluvial_particle.__version__)"
+```
+
+## Jupyter Kernel Tips
+
+### List registered kernels
+
+```bash
+jupyter kernelspec list
+```
+
+### Remove a kernel
+
+```bash
+jupyter kernelspec remove <kernel-name>
+```
+
+### Re-register after environment changes
+
+If you update Python or move the environment, re-register:
+
+```bash
+conda activate fluvial-particle
+python -m ipykernel install --user --name fluvial-particle --display-name "Fluvial Particle"
+```
+
+## Next Steps
+
+- [Quickstart Tutorial](../examples/basic/quickstart.qmd) - Run your first simulation
+- [Options File Reference](../examples/basic/options_file.qmd) - All configuration options
+- [PyVista Visualization](../examples/visualization/pyvista_intro.qmd) - 3D visualization

@@ -25,7 +25,12 @@ website:
     - title: "Examples"
       style: "docked"
       contents:
-        - section: "Getting Started"
+        - section: "Setup"
+          contents:
+            - getting-started/index.qmd
+            - getting-started/interactive-notebooks.qmd
+            - getting-started/user-environment.qmd
+        - section: "Tutorials"
           contents:
             - examples/basic/quickstart.qmd
             - examples/basic/options_file.qmd
@@ -39,8 +44,9 @@ website:
         - section: "Time-Varying Flows"
           contents:
             - examples/time_varying/unsteady_flow.qmd
-        - section: "Post-Processing"
+        - section: "Visualization"
           contents:
+            - examples/visualization/pyvista_intro.qmd
             - examples/visualization/paraview.qmd
             - examples/visualization/python_viz.qmd
 

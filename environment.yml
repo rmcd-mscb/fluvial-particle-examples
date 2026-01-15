@@ -1,0 +1,38 @@
+# Conda environment for fluvial-particle
+#
+# Create:  conda env create -f environment.yml
+# Update:  conda env update -f environment.yml --prune
+# Activate: conda activate fluvial-particle
+#
+# After activation, register as Jupyter kernel:
+#   python -m ipykernel install --user --name fluvial-particle --display-name "Fluvial Particle"
+
+name: fluvial-particle
+
+channels:
+  - conda-forge
+
+dependencies:
+  # Core Python
+  - python>=3.11,<3.14
+
+  # Compiled dependencies (better from conda than PyPI)
+  - vtk>=9.3
+  - h5py>=3.7
+  - numpy>=1.20
+
+  # Visualization
+  - matplotlib>=3.5
+  - pyvista>=0.43
+
+  # Data analysis
+  - pandas>=2.0
+
+  # Jupyter notebooks
+  - jupyterlab>=4.0
+  - ipykernel
+
+  # pip for fluvial-particle (not on conda-forge)
+  - pip
+  - pip:
+    - fluvial-particle>=0.0.6

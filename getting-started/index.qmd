@@ -1,0 +1,39 @@
+---
+title: "Getting Started"
+description: "Set up your environment for running fluvial-particle simulations"
+---
+
+## Choose Your Path
+
+### Working with this Repository
+
+If you're exploring the examples in this repository:
+
+1. [Running Notebooks Interactively](interactive-notebooks.qmd) - Set up VS Code to run `.qmd` notebooks with the pixi environment
+
+### Using in Your Own Projects
+
+If you want to use `fluvial-particle` in your own notebooks and projects:
+
+2. [Setting Up Your Own Environment](user-environment.qmd) - Create a standalone conda environment
+
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Install pixi environment | `pixi install` |
+| Register Jupyter kernel (pixi) | `pixi run register-kernel` |
+| Create conda environment | `conda env create -f environment.yml` |
+| Register Jupyter kernel (conda) | `python -m ipykernel install --user --name fluvial-particle --display-name "Fluvial Particle"` |
+| List kernels | `jupyter kernelspec list` |
+
+## Understanding Jupyter Kernels
+
+A common point of confusion: **Python environments and Jupyter kernels are separate systems**.
+
+- **Python environment**: A folder with Python + packages (conda env, venv, pixi)
+- **Jupyter kernel**: A registered "connection" that notebooks use to run code
+
+VS Code auto-discovers conda/venv environments but **pixi environments must be manually registered** as Jupyter kernels. This is why we provide the `pixi run register-kernel` command.
+
+See [Running Notebooks Interactively](interactive-notebooks.qmd) for details.

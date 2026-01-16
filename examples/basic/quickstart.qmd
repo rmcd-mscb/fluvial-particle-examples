@@ -17,22 +17,28 @@ pixi install
 
 ## Step 1: Prepare Your Configuration
 
-First, let's get the default settings template. The `get_settings_template()` function returns a complete settings file with all available options:
+First, let's get the default configuration as a dictionary. The `get_default_config()` function returns a complete configuration with all available options:
 
 ```{python}
 from pathlib import Path
-from fluvial_particle import get_settings_template
+from fluvial_particle import get_default_config
 
-# Get the default template
-template = get_settings_template()
-print(template)
+# Get the default configuration as a nested dictionary
+config = get_default_config()
+
+# View the structure
+for section, values in config.items():
+    print(f"[{section}]")
+    if isinstance(values, dict):
+        for key, val in values.items():
+            if isinstance(val, dict):
+                print(f"  [{section}.{key}]")
+            else:
+                print(f"  {key} = {val}")
+    print()
 ```
 
-Now customize the template for our example data. We need to update:
-
-- File paths to point to our example grids
-- Particle starting location
-- Simulation duration and output frequency
+Now customize the configuration for our example data. With dictionary-based config, you can modify values directly:
 
 ```{python}
 # Define paths to our example data
@@ -40,45 +46,54 @@ data_dir = Path("../../data/grids/FaSTMECH_straight")
 file_2d = str(data_dir / "Result_straight_2d_1.vts")
 file_3d = str(data_dir / "Result_straight_3d_1.vts")
 
-# Customize the template
-settings_content = template.replace(
-    'file_name_2d = "./path/to/your/mesh_2d.vts"',
-    f'file_name_2d = "{file_2d}"'
-).replace(
-    'file_name_3d = "./path/to/your/mesh_3d.vts"',
-    f'file_name_3d = "{file_3d}"'
-).replace(
-    'StartLoc = (0.0, 0.0, 0.0)',
-    'StartLoc = (10.0, 0.0, 0.5)'
-).replace(
-    'NumPart = 100',
-    'NumPart = 50'
-).replace(
-    'PrintAtTick = 10.0',
-    'PrintAtTick = 5.0'
-)
+# Customize grid settings
+config["grid"]["file_2d"] = file_2d
+config["grid"]["file_3d"] = file_3d
+config["grid"]["track_3d"] = True
 
-# Write to settings file
-settings_path = Path("user_options.py")
-settings_path.write_text(settings_content)
-print(f"Created settings file: {settings_path}")
+# Customize particle settings
+config["particles"]["count"] = 50
+config["particles"]["start_location"] = [10.0, 0.0, 0.5]
+
+# Customize simulation timing
+config["simulation"]["time"] = 60.0
+config["simulation"]["print_interval"] = 5.0
+
+print("Configuration updated!")
+print(f"  Grid 2D: {config['grid']['file_2d']}")
+print(f"  Particles: {config['particles']['count']}")
+print(f"  Start location: {config['particles']['start_location']}")
 ```
 
 ::: {.callout-tip}
-## Alternative: CLI initialization
-You can also generate the template from the command line:
-```bash
-fluvial_particle --init
+## Optional: Save configuration to file
+
+You can save the configuration to a TOML file for reuse or CLI execution:
+
+```python
+from fluvial_particle import save_config
+
+save_config(config, "settings.toml")
 ```
-This creates `user_options.py` in the current directory.
+
+Or generate a template from the command line:
+
+```bash
+fluvial_particle --init              # Creates settings.toml (TOML format)
+fluvial_particle --init --format python  # Legacy Python format
+```
 :::
 
 ## Step 2: Explore Your Grid Data
 
-Before running a simulation, use `inspect_grid` to understand your input data:
+Before running a simulation, use `inspect_grid` to understand your input data. This function requires a settings file, so we'll save our config first:
 
 ```{python}
-from fluvial_particle import inspect_grid
+from fluvial_particle import inspect_grid, save_config
+
+# Save config to a temporary file for inspection
+settings_path = Path("settings_temp.toml")
+save_config(config, settings_path)
 
 # Inspect the grid - prints summary and returns detailed info
 info = inspect_grid(settings_path)
@@ -97,7 +112,7 @@ print(f"Available 2D scalars: {info['grid_2d']['scalars']}")
 
 ## Step 3: Run the Simulation
 
-The `run_simulation` function provides a clean notebook interface:
+The `run_simulation` function accepts either a config dictionary or a file path:
 
 ```{python}
 from fluvial_particle import run_simulation
@@ -106,9 +121,9 @@ from fluvial_particle import run_simulation
 output_dir = Path("outputs/quickstart")
 output_dir.mkdir(parents=True, exist_ok=True)
 
-# Run simulation - returns SimulationResults object
+# Run simulation directly with config dict - no file needed!
 results = run_simulation(
-    settings_file=settings_path,
+    config,  # Pass dict directly
     output_dir=output_dir,
     seed=12345,  # For reproducibility
 )
@@ -119,11 +134,11 @@ print(f"Output directory: {results.output_dir}")
 
 ### Alternative: Using the CLI
 
-For batch processing or scripts, use the command line with the settings file:
+For batch processing or scripts, save the config to a file first:
 
 ```bash
-# Using the settings file we created
-pixi run fluvial_particle --settings user_options.py --output outputs/quickstart
+# Using a TOML settings file
+pixi run fluvial_particle settings.toml outputs/quickstart
 ```
 
 ## Step 4: Analyze Results
@@ -326,53 +341,53 @@ Key functions for notebook workflows:
 
 | Function | Purpose |
 |----------|---------|
+| `get_default_config()` | Get configuration as editable dictionary |
+| `save_config()` | Save config dict to TOML file |
 | `inspect_grid()` | Explore grid data before simulation |
-| `run_simulation()` | Run simulation from settings file |
+| `run_simulation()` | Run simulation from config dict or file |
 | `SimulationResults` | Access and analyze output data |
 
 ### Configuration Pattern for Notebooks
 
 The recommended pattern for notebooks is:
 
-1. **Define settings as a dictionary** - easy to modify programmatically
-2. **Write to a settings file** - enables `inspect_grid()` and CLI use
-3. **Run with `run_simulation()`** - returns results for analysis
+1. **Get default config** - `config = get_default_config()`
+2. **Modify as needed** - `config["particles"]["count"] = 200`
+3. **Run directly** - `results = run_simulation(config, output_dir)`
 
 ```python
-# Pattern for dynamic settings
-config = {"SimTime": 100.0, "NumPart": 200, ...}
-settings_path.write_text(generate_settings_string(config))
-results = run_simulation(settings_path, output_dir)
+# Clean notebook workflow - no files needed!
+from fluvial_particle import get_default_config, run_simulation
+
+config = get_default_config()
+config["grid"]["file_2d"] = "./mesh_2d.vts"
+config["grid"]["file_3d"] = "./mesh_3d.vts"
+config["particles"]["count"] = 100
+config["particles"]["start_location"] = [10.0, 0.0, 0.5]
+
+results = run_simulation(config, "./output", seed=42)
 ```
 
-### Configuration Options
+### Configuration Sections
 
-The settings file supports many options:
+The configuration dictionary has these main sections:
 
-**Required:**
+| Section | Key Settings |
+|---------|--------------|
+| `simulation` | `time`, `dt`, `print_interval` |
+| `particles` | `type`, `count`, `start_location` |
+| `particles.physics` | `beta`, `lev`, `min_depth`, `vertical_bound` |
+| `particles.falling` | `radius`, `density` (for FallingParticles) |
+| `particles.larval` | `amplitude`, `period` (for LarvalParticles) |
+| `grid` | `track_3d`, `file_2d`, `file_3d` |
+| `grid.field_map_2d` | Map model field names to standard names |
+| `grid.field_map_3d` | Map 3D field names |
+| `output` | `vtp` (optional VTP output) |
 
-- `Track3D`: 0 for 2D, 1 for 3D simulation
-- `file_name_2d`, `file_name_3d`: Paths to VTS/VTK grid files
-- `field_map_2d`, `field_map_3d`: Map model field names to standard names
-- `SimTime`, `dt`, `PrintAtTick`: Timing parameters
-- `NumPart`, `StartLoc`, `ParticleType`: Particle configuration
-
-**Shear Velocity (u\*):**
-
-- Automatically computed from `shear_stress` in field_map_2d
-- Or use `manning_n`, `chezy_c`, `darcy_f` as scalar values
-- Or map `ustar`, `energy_slope`, `tke` fields
-
-**Physics:**
-
-- `min_depth`: Depth threshold for wet/dry classification
-- `beta`: Diffusion coefficients (tuple of 3 values)
-- `lev`: Lateral eddy viscosity
-
-See the [Options File Reference](options_file.qmd) for the complete list.
+See the [Configuration Reference](../../docs/optionsfile.qmd) for complete documentation.
 
 ## Next Steps
 
-- [Options File Reference](options_file.qmd) - All configuration options
-- [Time-Varying Grids](../advanced/time_varying.qmd) - Unsteady flow simulations
+- [Configuration Reference](options_file.qmd) - All configuration options
+- [Time-Varying Grids](../time_varying/unsteady_flow.qmd) - Unsteady flow simulations
 - [ParaView Visualization](../visualization/paraview.qmd) - 3D visualization
